@@ -1,6 +1,3 @@
-# Defaults to TTN server v2, EU region
-TTN_STACK_VERSION=3 #${TTN_STACK_VERSION:-3}
-TTN_REGION="au1"
 if [ $TTN_STACK_VERSION -eq 2 ]; then
 	# TTN_REGION=${TTN_REGION:-"eu"}
 	TC_URI=${TC_URI:-"wss://lns.${TTN_REGION}.thethings.network:443"} 
@@ -13,11 +10,9 @@ else
 fi
 
 # Get certificate
-TC_TRUST=${TC_TRUST:-$(curl --silent "https://letsencrypt.org/certs/isrgrootx1.pem")}
-
+TC_TRUST=${TC_TRUST:-$(wget -qO- "https://letsencrypt.org/certs/isrgrootx1.pem")}
 # Sanitize TC_TRUST
 TC_TRUST=$(echo $TC_TRUST | sed 's/\s//g' | sed 's/-----BEGINCERTIFICATE-----/-----BEGIN CERTIFICATE-----\n/g' | sed 's/-----ENDCERTIFICATE-----/\n-----END CERTIFICATE-----\n/g' | sed 's/\n+/\n/g')
-
 # Check configuration
 if [ "$TC_URI" == "" ] || [ "$TC_TRUST" == "" ]
 then

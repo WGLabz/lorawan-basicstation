@@ -4,3 +4,4 @@
 deps/.DS_Store
 .DS_Store
 build-rpi-std
+examples/live-s2.sm.tc/tc.key

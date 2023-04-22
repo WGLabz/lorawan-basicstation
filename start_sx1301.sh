@@ -1,5 +1,4 @@
 #!/usr/bin/env bash 
-
 # Load common variables
 source ./start_common.sh
 
@@ -9,7 +8,7 @@ cd examples/live-s2.sm.tc
 # Setup TC files from environment
 echo "$TC_URI" > tc.uri
 echo "$TC_TRUST" > tc.trust
-echo "$TC_KEY" > 'NNSXS.YJSIYJZME7ADQEHVDBG5ZOVXFGQRINVJDKR26WA.JINLUCRBWUISOVXNFT42JRNDQVNOHJMK3HL5BNGEJVQEPZFYJ7HQ'
+
 if [ ! -z ${TC_KEY} ]; then
 	echo "Authorization: Bearer $TC_KEY" | perl -p -e 's/\r\n|\n|\r/\r\n/g'  > tc.key
 fi
