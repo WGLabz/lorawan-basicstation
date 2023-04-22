@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Chnage this path as per your system
 cd /home/oksbwn/lorawan-basicstation/
-# sleep 2m
+sleep 2m
 
 sudo chmod 777 -R .
 # Defaults to TTN server v2, EU region
