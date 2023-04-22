@@ -3,6 +3,7 @@
 cd /home/oksbwn/lorawan-basicstation/
 # sleep 2m
 
+sudo chmod 777 -R .
 # Set Variables
 TAG_KEY="EUI"
 # Defaults to TTN server v2, EU region
