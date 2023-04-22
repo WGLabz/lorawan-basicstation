@@ -4,8 +4,6 @@ cd /home/oksbwn/lorawan-basicstation/
 # sleep 2m
 
 sudo chmod 777 -R .
-# Set Variables
-TAG_KEY="EUI"
 # Defaults to TTN server v2, EU region
 TTN_STACK_VERSION=3 #${TTN_STACK_VERSION:-3}
 TTN_REGION="au1"
@@ -22,7 +20,6 @@ fi
 
 echo "Gateway EUI: $TTN_EUI"
 
-export TAG_KEY
 export TTN_STACK_VERSION
 export TTN_REGION
 export TC_KEY
