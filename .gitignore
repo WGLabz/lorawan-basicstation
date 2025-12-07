@@ -1,8 +1,0 @@
-# IDE
-.vscode
-
-deps/.DS_Store
-.DS_Store
-build-rpi-std
-build-local
-examples/live-s2.sm.tc/tc.key
