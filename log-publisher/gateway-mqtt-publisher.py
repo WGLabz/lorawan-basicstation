@@ -9,8 +9,7 @@ Gateway MQTT Publisher
 
 import os
 import time
-from datetime import datetime
-
+from datetime import datetime, timezone
 import docker
 import paho.mqtt.client as mqtt
 import requests
@@ -156,15 +155,15 @@ def fetch_ttn_stats():
         print(f"[{datetime.now()}] Error fetching TTN stats: {e}")
         return None
 
-
-def parse_ttn_stats(data):
-    """Extract a few useful fields from TTN stats JSON."""
+def parse_ttn_stats(data, max_age_seconds=600):
+    """Extract fields from TTN stats and derive a 'connected' flag."""
     if not data:
         return {
             "uplink_count": 0,
             "downlink_count": 0,
             "last_uplink_received_at": "",
             "last_downlink_received_at": "",
+            "connected": False,
         }
 
     uplink = int(data.get("uplink_count", 0))
@@ -172,13 +171,24 @@ def parse_ttn_stats(data):
     last_up = data.get("last_uplink_received_at", "")
     last_down = data.get("last_downlink_received_at", "")
 
+    connected = False
+    if last_up:
+        try:
+            # TTN timestamps are RFC3339/ISO8601, e.g. "2025-12-07T10:40:12.345Z"
+            t_last = datetime.fromisoformat(last_up.replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - t_last).total_seconds()
+            # Consider connected if last uplink within max_age_seconds
+            connected = age <= max_age_seconds and uplink > 0
+        except Exception:
+            connected = uplink > 0
+
     return {
         "uplink_count": uplink,
         "downlink_count": downlink,
         "last_uplink_received_at": last_up,
         "last_downlink_received_at": last_down,
+        "connected": connected,
     }
-
 
 # -----------------------------------------------------------------------------
 # Main loop
@@ -222,36 +232,40 @@ def publish_stats():
         try:
             now = time.time()
 
-            # Local Basic Station stats
-            if now - last_local >= local_interval:
-                local = get_gateway_stats(BASICSTATION_CONTAINER)
+            if now - last_ttn >= ttn_interval:
+                ttn_raw = fetch_ttn_stats()
+                ttn = parse_ttn_stats(ttn_raw)
 
-                client.publish(f"{TOPIC_PREFIX}/stats/rx_total", local["rx_total"], retain=True)
-                client.publish(f"{TOPIC_PREFIX}/stats/tx_total", local["tx_total"], retain=True)
+                client.publish(f"{TOPIC_PREFIX}/ttn/uplink_count", ttn["uplink_count"], retain=True)
+                client.publish(f"{TOPIC_PREFIX}/ttn/downlink_count", ttn["downlink_count"], retain=True)
                 client.publish(
-                    f"{TOPIC_PREFIX}/stats/connected",
-                    "1" if local["connected"] else "0",
+                    f"{TOPIC_PREFIX}/ttn/last_uplink_received_at",
+                    ttn["last_uplink_received_at"],
                     retain=True,
                 )
                 client.publish(
-                    f"{TOPIC_PREFIX}/stats/timestamp",
-                    local["timestamp"],
+                    f"{TOPIC_PREFIX}/ttn/last_downlink_received_at",
+                    ttn["last_downlink_received_at"],
                     retain=True,
                 )
                 client.publish(
-                    f"{TOPIC_PREFIX}/stats/last_update",
+                    f"{TOPIC_PREFIX}/ttn/connected",
+                    "1" if ttn["connected"] else "0",
+                    retain=True,
+                )
+                client.publish(
+                    f"{TOPIC_PREFIX}/ttn/last_update",
                     datetime.now().isoformat(),
                     retain=True,
                 )
 
                 print(
-                    f"[{datetime.now()}] Local: RX={local['rx_total']}, "
-                    f"TX={local['tx_total']}, Connected={local['connected']}"
+                    f"[{datetime.now()}] TTN: up={ttn['uplink_count']}, "
+                    f"down={ttn['downlink_count']}, connected={ttn['connected']}"
                 )
 
-                last_local = now
+                last_ttn = now
 
-            # TTN stats (slower interval)
             if now - last_ttn >= ttn_interval:
                 ttn_raw = fetch_ttn_stats()
                 ttn = parse_ttn_stats(ttn_raw)
